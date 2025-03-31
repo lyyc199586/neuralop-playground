@@ -104,7 +104,7 @@ def prepare_dataset(load_dir:Path, save_dir: Path) -> Dict[str, torch.Tensor]:
         ramps_list.append(torch.tensor(np.load(f), dtype=torch.float32))
     ramps_data = torch.stack(ramps_list)
     n_samples, res_x, res_y = ramps_data.shape
-    ramps_filename = f"ramp_n{n_samples}_res{res_x}.pt"
+    ramps_filename = f"ramps_n{n_samples}_res{res_x}.pt"
     
     # helper function to load variables
     def load_var(files: List[Path], var_name: str) -> Tuple[torch.Tensor, str]:
@@ -182,6 +182,7 @@ class DamageSensorDataset:
                  masks_path: Union[Path, str],
                  n_train:int,
                  batch_size: int,
+                 test_batch_sizes: List[int],
                  test_resolutions: int=[32],
                  encode_input: bool=True,
                  encode_output: bool=True,
@@ -202,11 +203,11 @@ class DamageSensorDataset:
         masks = torch.load(masks_path)      # shape (n_masks,   res_x, res_y)
         
         # print info
-        print(f"Loaded RAMPs      -> {ramps_path}, ({ramps.shape})")
-        print(f"Loaded damage     -> {damage_path}, ({damage.shape})")
-        print(f"Loaded defgrad    -> {defgrad_path}, ({defgrad.shape})")
-        print(f"Loaded elec field -> {elec_path}, ({elec.shape})")
-        print(f"Loaded masks      -> {masks_path}, ({masks.shape})")
+        print(f"Loaded RAMPs      -> {ramps_path},\t({ramps.shape})")
+        print(f"Loaded damage     -> {damage_path},\t({damage.shape})")
+        print(f"Loaded defgrad    -> {defgrad_path},\t({defgrad.shape})")
+        print(f"Loaded elec field -> {elec_path},\t({elec.shape})")
+        print(f"Loaded masks      -> {masks_path},\t({masks.shape})")
         
         # shape check
         assert ramps.ndim == 3, "RAMPs should have shape (n_samples, res_x, res_y)"
@@ -370,9 +371,10 @@ def load_damage_sensor_dataset(
     
     train_loader = DataLoader(dataset.train_db,
                               batch_size=batch_size,
+                              shuffle=True,
                               num_workers=0,
                               pin_memory=True,
-                              presistent_work=False,)
+                              persistent_workers=False,)
     
     test_loaders = {}
     for res,test_bsize in zip(test_resolutions, test_batch_sizes):

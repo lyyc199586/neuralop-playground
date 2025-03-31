@@ -79,21 +79,6 @@ class MaskGenerator:
         if idx < 0 or idx >= self.masks.shape[0]:
             raise IndexError(f"Index {idx} out of range for masks with shape {self.masks.shape}.")
         
-        plt.imshow(self.masks[idx].numpy(), cmap='gray', origin='lower')
+        plt.imshow(self.masks[idx].numpy(), cmap='gray_r', origin='lower')
         plt.title(f"Mask {idx}")
         plt.show()
-    
-    
-#%% testing
-if __name__ == "__main__":
-    gen = MaskGenerator(grid_shape=(32, 32))
-    positions_list = [
-        [(0, 0), (1, 1), (2, 2)],  # Mask 1
-        [(10, 10), (11, 11)],     # Mask 2
-        [(20, 20), (21, 21), (22, 22)] # Mask 3
-    ]
-    masks = gen.generate_from_positions(positions_list)
-    gen.plot(idx=2)  # Plot the first mask
-    # gen.save("test.pt")
-    
-# %%
