@@ -179,5 +179,5 @@ cython_debug/
 
 **/ckpt/
 **/model/
-
+**/wandb/
 **/log.txt
