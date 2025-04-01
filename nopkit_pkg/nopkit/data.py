@@ -329,7 +329,7 @@ def load_damage_sensor_dataset(
     test_batch_sizes: List[int],
     test_resolutions: int=[32],
     encode_input: bool = True,
-    encode_output: bool = False,
+    encode_output: bool = True,
     encoding: str = "channel-wise",
     channel_dim: int = 1
 ) -> DamageSensorDataset:
