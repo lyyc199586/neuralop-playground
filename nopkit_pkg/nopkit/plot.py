@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 import matplotlib.colors as mcolors
 from matplotlib.animation import FuncAnimation
 
@@ -64,7 +65,7 @@ def data_image(x, y, t, axes=None, show_colorbar=True):
     
     return axes
 
-def pred_plot(y, pred, t, axes=None, show_colorbar=True, vmins=None, vmaxs=None, plot_method='image'):
+def pred_plot(y, pred, t, show_colorbar=True, vmins=None, vmaxs=None, plot_method='image'):
     """
     2*3 subplots
     plot: ground-truth y: y[0], y[1], y[2]
@@ -72,10 +73,9 @@ def pred_plot(y, pred, t, axes=None, show_colorbar=True, vmins=None, vmaxs=None,
           index: y[channel, height, width, time]
     """
     
-    if axes is None:
-        fig, axes = plt.subplots(2, 3, figsize=(7, 4.5))
-    else:
-        fig = axes[0, 0].figure
+    fig = plt.figure(figsize=(7, 5))
+    gs = gridspec.GridSpec(3, 3, height_ratios=[1, 1, 0.05])
+    axes = np.empty((2, 3), dtype=object)
         
     if vmins is None:
         vmins = [min(y[i, :, :, t].min(), pred[i, :, :, t].min()) for i in range(3)]
@@ -88,66 +88,49 @@ def pred_plot(y, pred, t, axes=None, show_colorbar=True, vmins=None, vmaxs=None,
     norms = [mcolors.Normalize(vmin=vmins[i], vmax=vmaxs[i]) for i in range(3)]
 
     # Ground truth
-    axes[0, 0].annotate("Ground truth", xy=(-0.15, 0.5), xycoords="axes fraction",
-                        ha="right", va="center", rotation=90)
     for i in range(3):
-        if plot_method == 'contourf':
-            im = axes[0, i].contourf(y[i, :, :, t], origin='lower', levels=20, norm=norms[i])
-        else:
-            im = axes[0, i].imshow(y[i, :, :, t], origin='lower', norm=norms[i])
-        axes[0, i].set_title(titles[i])
+        ax = fig.add_subplot(gs[0, i])
+        axes[0, i] = ax
+        im = ax.imshow(y[i, :, :, t], origin='lower', norm=norms[i])
+        ax.set_title(titles[i])
+        ax.set_xticks([])
+        ax.set_yticks([])
         ims.append(im)
 
     # Prediction
-    axes[1, 0].annotate("Prediction", xy=(-0.15, 0.5), xycoords="axes fraction",
-                        ha="right", va="center", rotation=90)
     for i in range(3):
-        if plot_method == 'contourf':
-            im = axes[1, i].contourf(pred[i, :, :, t], origin='lower', levels=20, norm=norms[i])
-        else:
-            im = axes[1, i].imshow(pred[i, :, :, t], origin='lower', norm=norms[i])
-        ims.append(im)
-
-    for ax in axes.flat:
+        ax = fig.add_subplot(gs[1, i])
+        axes[1, i] = ax
+        im = ax.imshow(pred[i, :, :, t], origin='lower', norm=norms[i])
         ax.set_xticks([])
         ax.set_yticks([])
+        ims.append(im)
 
+    # colorbars
     if show_colorbar:
-        # reserve a unified space below for colorbars
-        cbar_height = 0.02
-        spacing = 0.04
         for i in range(3):
-            pos = axes[1, i].get_position()
-            cbar_ax = fig.add_axes([
-                pos.x0,
-                pos.y0 - cbar_height - spacing,
-                pos.width,
-                cbar_height
-            ])
-            ims[i + 3].set_norm(norms[i])
-            cbar = fig.colorbar(ims[i + 3], cax=cbar_ax, orientation='horizontal')
+            cax = fig.add_subplot(gs[2, i])
+            cbar = fig.colorbar(ims[i+3], cax=cax, orientation='horizontal')
             cbar.set_label(labels[i])
             cbar.set_ticks([vmins[i], vmaxs[i]])
-
-    # plt.tight_layout()
-    plt.show()
+            
+    fig.text(0.1, 0.73, 'Ground truth', va='center', ha='right', rotation=90)
+    fig.text(0.1, 0.32, 'Prediction', va='center', ha='right', rotation=90)
     return axes, ims
 
 def pred_anim(y, pred, t_range, save_path=None, fps=2, **kwargs):
     
     if t_range is None:
         t_range = range(y.shape[-1])
-        
-    fig, axes = plt.subplots(2, 3, figsize=(7, 4.5))
     
-    _, ims = pred_plot(y, pred, t_range[0], axes=axes, **kwargs)
+    _, ims = pred_plot(y, pred, t_range[0], **kwargs)
     def update(t):
         for i in range(3):
             ims[i].set_array(y[i, :, :, t])
             ims[i+3].set_array(pred[i, :, :, t])
         return ims
     
-    anim = FuncAnimation(fig, update, frames=t_range,  blit=False, repeat=False)
+    anim = FuncAnimation(ims[0].figure, update, frames=t_range,  blit=False, repeat=False)
     # plt.tight_layout()
     
     if save_path:
