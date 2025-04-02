@@ -70,7 +70,8 @@ def pred_plot(y, pred, t, show_colorbar=True, vmins=None, vmaxs=None, plot_metho
     2*3 subplots
     plot: ground-truth y: y[0], y[1], y[2]
           prediction: pred[0], pred[1], pred[2]
-          index: y[channel, height, width, time]
+    index: [channel, height, width, time]
+    plot_method: 'image' or 'contourf'
     """
     
     fig = plt.figure(figsize=(7, 5))
@@ -91,7 +92,12 @@ def pred_plot(y, pred, t, show_colorbar=True, vmins=None, vmaxs=None, plot_metho
     for i in range(3):
         ax = fig.add_subplot(gs[0, i])
         axes[0, i] = ax
-        im = ax.imshow(y[i, :, :, t], origin='lower', norm=norms[i])
+        data = y[i, :, :, t]
+        if plot_method == 'contourf':
+            levels = np.linspace(vmins[i], vmaxs[i], 21)
+            im = ax.contourf(data, levels=levels, extend='both')
+        else:
+            im = ax.imshow(data, origin='lower', norm=norms[i])
         ax.set_title(titles[i])
         ax.set_xticks([])
         ax.set_yticks([])
@@ -101,7 +107,12 @@ def pred_plot(y, pred, t, show_colorbar=True, vmins=None, vmaxs=None, plot_metho
     for i in range(3):
         ax = fig.add_subplot(gs[1, i])
         axes[1, i] = ax
-        im = ax.imshow(pred[i, :, :, t], origin='lower', norm=norms[i])
+        data = pred[i, :, :, t]
+        if plot_method == 'contourf':
+            levels = np.linspace(vmins[i], vmaxs[i], 21)
+            im = ax.contourf(data, levels=levels, extend='both') 
+        else:
+            im = ax.imshow(data, origin='lower', norm=norms[i])
         ax.set_xticks([])
         ax.set_yticks([])
         ims.append(im)
@@ -138,3 +149,98 @@ def pred_anim(y, pred, t_range, save_path=None, fps=2, **kwargs):
         print(f"save to {save_path}")
     else:
         plt.show()
+        
+def pixel2voxel(data, z_slices=4):
+    """
+    Expand (c, x, y, t) array to (c, x, y, z, t) by repeating along z-axis.
+    """
+    return data.unsqueeze(3).repeat(1, 1, 1, z_slices, 1)
+        
+def pred_voxel(y, p, t, show_colorbar=True, vmins=None, vmaxs=None, plot_method='contourf'):
+    """
+    2x3 subplot of 3D voxel data (x,y,z,t) from (c,x,y,t) expanded by z_slices.
+
+    Parameters:
+    - y, p: ndarray of shape (c, x, y, t)
+    - t: int, time step
+    - plot_method: 'voxel' or 'contourf'
+    """
+    truth = pixel2voxel(y)
+    pred = pixel2voxel(p)
+    
+    fig = plt.figure(figsize=(7, 5))
+    gs = gridspec.GridSpec(3, 3, height_ratios=[1, 1, 0.05])
+    axes = np.empty((2, 3), dtype=object)
+
+    if vmins is None:
+        vmins = [min(truth[i, :, :, :, t].min(), pred[i, :, :, :, t].min()) for i in range(3)]
+    if vmaxs is None:
+        vmaxs = [max(truth[i, :, :, :, t].max(), pred[i, :, :, :, t].max()) for i in range(3)]
+
+    titles = ['Electric Field', 'Deformation Field', 'Damage Indicator']
+    labels = [r'$\xi_3$ (V/m)', r'$F_{22}$', r'$I_D$']
+    norms = [mcolors.Normalize(vmin=vmins[i], vmax=vmaxs[i]) for i in range(3)]
+    
+    for row, data3d in enumerate([truth, pred]):
+        for i in range(3):
+            ax = fig.add_subplot(gs[row, i], projection='3d')
+            axes[row, i] = ax
+            vol = data3d[i, :, :, :, t].numpy().copy()
+            x_len, y_len, z_len = vol.shape
+            norm = norms[i]
+            X, Y, Z = np.meshgrid(np.arange(x_len), np.arange(y_len), np.arange(z_len))
+            xmin, xmax = X.min(), X.max()
+            ymin, ymax = Y.min(), Y.max()
+            zmin, zmax = Z.min(), Z.max()
+            if plot_method == 'voxel':
+                ls = mcolors.LightSource(azdeg=120, altdeg=45)
+                facecolors = plt.cm.viridis(norm(vol))
+                ax.voxels(vol, facecolors=facecolors, edgecolor='w', shade=True, lightsource=ls, lw=0)
+            elif plot_method == 'contourf':
+                levels = np.linspace(vmins[i], vmaxs[i], 50)
+                kw = dict(levels=levels, norm=norm, extend='both')
+
+                # plot contourf surfaces
+                ax.contourf(X[:, :, -1], Y[:, :, -1], vol[:, :, -1], zdir="z", offset=Z.max(), **kw)
+                ax.contourf(X[-1, :, :], vol[-1, :, :], Z[-1, :, :], zdir="y", offset=Y.max(), **kw)
+                ax.contourf(vol[:, -1, :], Y[:, -1, :], Z[:, -1, :], zdir="x",offset=X.max(), **kw)
+
+                # plot edges
+                edges_kw = dict(color="k", lw=0.25, zorder=1e3)
+                ax.plot([xmax, xmax], [ymin, ymax], zmin, **edges_kw)
+                ax.plot([xmax, xmax], [ymin, ymax], zmax, **edges_kw)
+                ax.plot([xmin, xmin], [ymin, ymax], zmax, **edges_kw)
+
+                ax.plot([xmin, xmax], [ymin, ymin], zmax, **edges_kw)
+                ax.plot([xmin, xmax], [ymax, ymax], zmax, **edges_kw)
+                ax.plot([xmin, xmax], [ymax, ymax], zmin, **edges_kw)
+
+                ax.plot([xmax, xmax], [ymin, ymin], [zmin, zmax], **edges_kw)
+                ax.plot([xmax, xmax], [ymax, ymax], [zmin, zmax], **edges_kw)
+                ax.plot([xmin, xmin], [ymax, ymax], [zmin, zmax], **edges_kw)
+                
+                ax.set(xlim=(xmin, xmax),
+                       ylim=(ymin, ymax),
+                       zlim=(zmin, zmax))
+            else:
+                raise ValueError("plot_method must be 'voxel' or 'contourf'")
+
+            ax.set_title(titles[i] if row == 0 else "")
+            ax.set_axis_off()
+            ax.set_box_aspect([1/8, 1, 1])
+            ax.view_init(azim=15, vertical_axis='y')
+    
+    # Colorbar
+    if show_colorbar:
+        for i in range(3):
+            cax = fig.add_subplot(gs[2, i])
+            sm = plt.cm.ScalarMappable(cmap='viridis', norm=norms[i])
+            sm.set_array([])
+            cbar = fig.colorbar(sm, cax=cax, orientation='horizontal')
+            cbar.set_label(labels[i])
+            cbar.set_ticks([vmins[i], vmaxs[i]])
+            
+    fig.text(0.1, 0.73, 'Ground truth', va='center', ha='right', rotation=90)
+    fig.text(0.1, 0.32, 'Prediction', va='center', ha='right', rotation=90)
+    
+    return axes
