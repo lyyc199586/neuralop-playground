@@ -158,7 +158,8 @@ def pixel2voxel(data, z_slices=4):
     """
     return data.unsqueeze(3).repeat(1, 1, 1, z_slices, 1)
         
-def pred_voxel(y, p, t, fig=None, show_colorbar=True, vmins=None, vmaxs=None, plot_method='contourf'):
+def pred_voxel(y, p, t, fig=None, show_colorbar=True, vmins=None, vmaxs=None, 
+               plot_method='contourf', level=20, cmap='viridis'):
     """
     2x3 subplot of 3D voxel data (x,y,z,t) from (c,x,y,t) expanded by z_slices.
 
@@ -199,11 +200,12 @@ def pred_voxel(y, p, t, fig=None, show_colorbar=True, vmins=None, vmaxs=None, pl
             zmin, zmax = Z.min(), Z.max()
             if plot_method == 'voxel':
                 ls = mcolors.LightSource(azdeg=120, altdeg=45)
-                facecolors = plt.cm.viridis(norm(vol))
+                cmap = plt.get_cmap(cmap)
+                facecolors = cmap(norm(vol))
                 ax.voxels(vol, facecolors=facecolors, edgecolor='w', shade=True, lightsource=ls, lw=0)
             elif plot_method == 'contourf':
-                levels = np.linspace(vmins[i], vmaxs[i], 50)
-                kw = dict(levels=levels, norm=norm, extend='both')
+                levels = np.linspace(vmins[i], vmaxs[i], level)
+                kw = dict(levels=levels, norm=norm, extend='both', cmap=cmap)
 
                 # plot contourf surfaces
                 ax.contourf(X[:, :, -1], Y[:, :, -1], vol[:, :, -1], zdir="z", offset=Z.max(), **kw)
@@ -239,7 +241,7 @@ def pred_voxel(y, p, t, fig=None, show_colorbar=True, vmins=None, vmaxs=None, pl
     if show_colorbar:
         for i in range(3):
             cax = fig.add_subplot(gs[2, i])
-            sm = plt.cm.ScalarMappable(cmap='viridis', norm=norms[i])
+            sm = plt.cm.ScalarMappable(cmap=cmap, norm=norms[i])
             sm.set_array([])
             cbar = fig.colorbar(sm, cax=cax, orientation='horizontal')
             cbar.set_label(labels[i])
