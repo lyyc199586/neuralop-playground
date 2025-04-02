@@ -1,4 +1,6 @@
 import numpy as np
+import matplotlib
+# matplotlib.use('Agg') 
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import matplotlib.colors as mcolors
@@ -156,7 +158,7 @@ def pixel2voxel(data, z_slices=4):
     """
     return data.unsqueeze(3).repeat(1, 1, 1, z_slices, 1)
         
-def pred_voxel(y, p, t, show_colorbar=True, vmins=None, vmaxs=None, plot_method='contourf'):
+def pred_voxel(y, p, t, fig=None, show_colorbar=True, vmins=None, vmaxs=None, plot_method='contourf'):
     """
     2x3 subplot of 3D voxel data (x,y,z,t) from (c,x,y,t) expanded by z_slices.
 
@@ -168,7 +170,10 @@ def pred_voxel(y, p, t, show_colorbar=True, vmins=None, vmaxs=None, plot_method=
     truth = pixel2voxel(y)
     pred = pixel2voxel(p)
     
-    fig = plt.figure(figsize=(7, 5))
+    if fig is None:
+        fig = plt.figure(figsize=(7, 5))
+    else:
+        fig.clf()
     gs = gridspec.GridSpec(3, 3, height_ratios=[1, 1, 0.05])
     axes = np.empty((2, 3), dtype=object)
 
@@ -242,5 +247,26 @@ def pred_voxel(y, p, t, show_colorbar=True, vmins=None, vmaxs=None, plot_method=
             
     fig.text(0.1, 0.73, 'Ground truth', va='center', ha='right', rotation=90)
     fig.text(0.1, 0.32, 'Prediction', va='center', ha='right', rotation=90)
-    
     return axes
+
+def pred_voxel_anim(y, p, t_range, save_path=None, fps=2, **kwargs):
+    
+    if t_range is None:
+        t_range = range(y.shape[-1])
+    
+    fig = plt.figure(figsize=(7, 5))
+    
+    def update(t):
+        for ax in fig.axes:
+            ax.clear()
+        pred_voxel(y, p, t, fig=fig, **kwargs)
+        fig.suptitle(f"Time step: {t}")
+        return fig.axes
+    
+    anim = FuncAnimation(fig, update, frames=t_range,  blit=False, repeat=False)
+    
+    if save_path:
+        anim.save(save_path, fps=fps)
+        print(f"save to {save_path}")
+    else:
+        plt.show()
