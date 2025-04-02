@@ -266,7 +266,7 @@ def pred_voxel_anim(y, p, t_range, save_path=None, fps=2, **kwargs):
     anim = FuncAnimation(fig, update, frames=t_range,  blit=False, repeat=False)
     
     if save_path:
-        anim.save(save_path, fps=fps)
+        anim.save(save_path, fps=fps, dpi=300)
         print(f"save to {save_path}")
     else:
         plt.show()
