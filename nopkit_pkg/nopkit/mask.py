@@ -7,9 +7,10 @@ used in neural operator models for virtual damage sensor.
 Author: Yangyuanchen Liu
 Date: 2025-03-31
 """
-#%%
-import numpy as np
+
+import random
 import torch
+import numpy as np
 from typing import List, Tuple, Union
 from pathlib import Path
 import matplotlib.pyplot as plt
@@ -52,6 +53,45 @@ class MaskGenerator:
             mask_list.append(mask)
         self.masks = torch.tensor(mask_list, dtype=torch.float32) # (n_masks, height, width)
         return self.masks 
+    
+    def generate_random(
+        self, n_masks:int, n_sensors_range: Tuple[int, int], top_position: Tuple[int, int]
+    ) -> torch.Tensor:
+        """
+        Generate a list of sensor layouts with one fixed top sensor and variable non-adjacent right sensors.
+
+        Args:
+            n_masks (int): Number of sensor layouts to generate.
+            n_sensors_range (Tuple[int, int]): Range of total sensor numbers, e.g., (5, 17).
+            top_position (Tuple[int, int]): Fixed sensor position on the top boundary. e.g., (31, 16).
+             
+        Returns:
+            List[List[Tuple[int, int]]]: List of sensor position lists.
+        """
+        height, width = self.grid_shape
+        right_col = width - 1
+        right_candidates = [(i, right_col) for i in range(0, height, 2)]
+        mask_list = []
+        
+        for _ in range(n_masks):
+            total_sensors = random.randint(n_sensors_range[0], n_sensors_range[1])
+            num_right = total_sensors - 1  # one reserved for top
+
+            if num_right > len(right_candidates):
+                raise ValueError(f"Cannot place {num_right} non-adjacent sensors on right boundary.")
+
+            selected_right = random.sample(right_candidates, num_right)
+            positions  = [top_position] + selected_right
+            
+            # build mask
+            mask = np.zeros((height, width), dtype=np.float32)
+            for (i, j) in positions:
+                assert 0 <= i < height and 0 <= j < width, f"Position ({i},{j}) out of bounds for shape ({height},{width})"
+                mask[i, j] = 1.0
+            mask_list.append(mask)
+
+        self.masks = torch.tensor(mask_list, dtype=torch.float32)
+        return self.masks
     
     def save(self, save_path: Union[str, Path]):
         """

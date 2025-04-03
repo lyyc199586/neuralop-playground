@@ -246,7 +246,9 @@ class DamageSensorDataset:
                 
         x_all = torch.stack(inputs)  # (n_masks*n_samples, n_channels, res_x, res_y, time_steps)
         y_all = torch.stack(outputs) # (n_masks*n_samples, n_channels, res_x, res_y, time_steps)
-            
+        
+        # modifiy n_train based on n_masks
+        n_train = n_train * n_masks
         x_train = x_all[:n_train]
         y_train = y_all[:n_train]
         
