@@ -1,17 +1,51 @@
+"""
+plot.py
+
+This module provides various visualization utilities for plotting and animating 
+2D and 3D FNO input and output data, including ground truth and predictions. 
+It supports both static and animated visualizations, as well as voxel-based 3D plotting.
+
+Author: Yangyuanchen Liu
+Date: 2025-04-04
+
+Overview:
+- Loads RAMPs and spatiotemporal variable `.npy` files from FEM results directories.
+- Stacks and reshapes data into `torch.Tensor` formats.
+- Saves preprocessed data as `.pt` files with structured naming.
+"""
+
 import numpy as np
-import matplotlib
-# matplotlib.use('Agg') 
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import matplotlib.colors as mcolors
 from matplotlib.animation import FuncAnimation
+from typing import Optional, Tuple, List, Union
 
-def data_image(x, y, t, axes=None, show_colorbar=True):
+def data_image(
+    x: np.ndarray, 
+    y: np.ndarray, 
+    t: int, 
+    axes: Optional[np.ndarray] = None, 
+    show_colorbar: bool = True
+) -> np.ndarray:
     """
-    2*3 subplots
-    plot  input x: x[0], x[1], x[2]
-          output y: y[0], y[1], y[2]
-    index: x[channel, height, width, time]
+    Visualize 2x3 subplots of input (x) and output (y) data at a specific time step.
+
+    Parameters:
+    - x: np.ndarray, shape (3, height, width, time)
+        Input data with 3 channels.
+    - y: np.ndarray, shape (3, height, width, time)
+        Output data with 3 channels.
+    - t: int
+        Time step to visualize.
+    - axes: Optional[np.ndarray]
+        Predefined axes for plotting. If None, new axes are created.
+    - show_colorbar: bool
+        Whether to display colorbars for each subplot.
+
+    Returns:
+    - axes: np.ndarray
+        Axes used for the plots.
     """
     
     if axes is None:
@@ -67,13 +101,39 @@ def data_image(x, y, t, axes=None, show_colorbar=True):
     
     return axes
 
-def pred_plot(y, pred, t, show_colorbar=True, vmins=None, vmaxs=None, plot_method='image'):
+def pred_plot(
+    y: np.ndarray, 
+    pred: np.ndarray, 
+    t: int, 
+    show_colorbar: bool = True, 
+    vmins: Optional[List[float]] = None, 
+    vmaxs: Optional[List[float]] = None, 
+    plot_method: str = 'image'
+) -> Tuple[np.ndarray, List]:
     """
-    2*3 subplots
-    plot: ground-truth y: y[0], y[1], y[2]
-          prediction: pred[0], pred[1], pred[2]
-    index: [channel, height, width, time]
-    plot_method: 'image' or 'contourf'
+    Plot ground truth and predictions in a 2x3 grid.
+
+    Parameters:
+    - y: np.ndarray, shape (3, height, width, time)
+        Ground truth data.
+    - pred: np.ndarray, shape (3, height, width, time)
+        Predicted data.
+    - t: int
+        Time step to visualize.
+    - show_colorbar: bool
+        Whether to display colorbars for each subplot.
+    - vmins: Optional[List[float]]
+        Minimum values for color normalization. If None, computed from data.
+    - vmaxs: Optional[List[float]]
+        Maximum values for color normalization. If None, computed from data.
+    - plot_method: str
+        Plotting method, either 'image' or 'contourf'.
+
+    Returns:
+    - axes: np.ndarray
+        Axes used for the plots.
+    - ims: List
+        List of image objects for the plots.
     """
     
     fig = plt.figure(figsize=(7, 5))
@@ -131,8 +191,31 @@ def pred_plot(y, pred, t, show_colorbar=True, vmins=None, vmaxs=None, plot_metho
     fig.text(0.1, 0.32, 'Prediction', va='center', ha='right', rotation=90)
     return axes, ims
 
-def pred_anim(y, pred, t_range, save_path=None, fps=2, **kwargs):
-    
+def pred_anim(
+    y: np.ndarray, 
+    pred: np.ndarray, 
+    t_range: Optional[range] = None, 
+    save_path: Optional[str] = None, 
+    fps: int = 2, 
+    **kwargs
+) -> None:
+    """
+    Create an animation of ground truth and predictions over a range of time steps.
+
+    Parameters:
+    - y: np.ndarray, shape (3, height, width, time)
+        Ground truth data.
+    - pred: np.ndarray, shape (3, height, width, time)
+        Predicted data.
+    - t_range: Optional[range]
+        Range of time steps to animate.
+    - save_path: Optional[str]
+        Path to save the animation. If None, the animation is displayed.
+    - fps: int
+        Frames per second for the animation.
+    - kwargs: dict
+        Additional keyword arguments for `pred_plot` function.
+    """
     if t_range is None:
         t_range = range(y.shape[-1])
     
@@ -152,21 +235,65 @@ def pred_anim(y, pred, t_range, save_path=None, fps=2, **kwargs):
     else:
         plt.show()
         
-def pixel2voxel(data, z_slices=4):
+def pixel2voxel(data: np.ndarray, z_slices: int = 4) -> np.ndarray:
     """
     Expand (c, x, y, t) array to (c, x, y, z, t) by repeating along z-axis.
+
+    Parameters:
+    - data: np.ndarray, shape (c, x, y, t)
+        Input data.
+    - z_slices: int
+        Number of slices along the z-axis.
+
+    Returns:
+    - np.ndarray, shape (c, x, y, z, t)
+        Expanded data.
     """
     return data.unsqueeze(3).repeat(1, 1, 1, z_slices, 1)
         
-def pred_voxel(y, p, t, fig=None, show_colorbar=True, vmins=None, vmaxs=None, 
-               plot_method='contourf', level=20, cmap='viridis'):
+def pred_plot3d(
+    y: np.ndarray, 
+    p: np.ndarray, 
+    t: int, 
+    fig: Optional[plt.Figure] = None, 
+    show_colorbar: bool = True, 
+    vmins: Optional[List[float]] = None, 
+    vmaxs: Optional[List[float]] = None, 
+    plot_method: str = 'contourf', 
+    level: int = 20, 
+    cmap: str = 'viridis', 
+    shade: bool = False
+) -> np.ndarray:
     """
     2x3 subplot of 3D voxel data (x,y,z,t) from (c,x,y,t) expanded by z_slices.
 
     Parameters:
-    - y, p: ndarray of shape (c, x, y, t)
-    - t: int, time step
-    - plot_method: 'voxel' or 'contourf'
+    - y: np.ndarray, shape (3, height, width, time)
+        Ground truth data.
+    - p: np.ndarray, shape (3, height, width, time)
+        Predicted data.
+    - t: int
+        Time step to visualize.
+    - fig: Optional[plt.Figure]
+        Matplotlib figure object. If None, a new figure is created.
+    - show_colorbar: bool
+        Whether to display colorbars for each subplot.
+    - vmins: Optional[List[float]]
+        Minimum values for color normalization. If None, computed from data.
+    - vmaxs: Optional[List[float]]
+        Maximum values for color normalization. If None, computed from data.
+    - plot_method: str
+        Plotting method, either 'image' or 'contourf'.
+    - level: int
+        Number of contour levels for 'contourf' method.
+    - cmap: str
+        Colormap to use for plotting.
+    - shade: bool
+        Whether to apply shading to 3D plots.
+
+    Returns:
+    - np.ndarray
+        Axes used for the plots.
     """
     truth = pixel2voxel(y)
     pred = pixel2voxel(p)
@@ -194,15 +321,31 @@ def pred_voxel(y, p, t, fig=None, show_colorbar=True, vmins=None, vmaxs=None,
             vol = data3d[i, :, :, :, t].numpy().copy()
             x_len, y_len, z_len = vol.shape
             norm = norms[i]
+            
+            # generate mesh
             X, Y, Z = np.meshgrid(np.arange(x_len), np.arange(y_len), np.arange(z_len))
             xmin, xmax = X.min(), X.max()
             ymin, ymax = Y.min(), Y.max()
             zmin, zmax = Z.min(), Z.max()
-            if plot_method == 'voxel':
-                ls = mcolors.LightSource(azdeg=120, altdeg=45)
+            
+            # plot
+            if plot_method == 'image':
                 cmap = plt.get_cmap(cmap)
-                facecolors = cmap(norm(vol))
-                ax.voxels(vol, facecolors=facecolors, edgecolor='w', shade=True, lightsource=ls, lw=0)
+                
+                # plot image
+                top_color = cmap(norms[i](vol[:, :, -1]))
+                ax.plot_surface(X[:, :, -1], Y[:, :, -1], Z[:, :, -1],
+                            rstride=1, cstride=1, facecolors=top_color, shade=shade)
+                
+                front_color = cmap(norms[i](vol[:, -1, :]))
+                ax.plot_surface(X[:, -1, :], Y[:, -1, :], Z[:, -1, :],
+                            rstride=1, cstride=1, facecolors=front_color, shade=shade)
+                
+                side_color = cmap(norms[i](vol[-1, :, :]))
+                ax.plot_surface(X[-1, :, :], Y[-1, :, :], Z[-1, :, :],
+                            rstride=1, cstride=1, facecolors=side_color, shade=shade)
+                
+                
             elif plot_method == 'contourf':
                 levels = np.linspace(vmins[i], vmaxs[i], level)
                 kw = dict(levels=levels, norm=norm, extend='both', cmap=cmap)
@@ -212,26 +355,23 @@ def pred_voxel(y, p, t, fig=None, show_colorbar=True, vmins=None, vmaxs=None,
                 ax.contourf(X[-1, :, :], vol[-1, :, :], Z[-1, :, :], zdir="y", offset=Y.max(), **kw)
                 ax.contourf(vol[:, -1, :], Y[:, -1, :], Z[:, -1, :], zdir="x",offset=X.max(), **kw)
 
-                # plot edges
-                edges_kw = dict(color="k", lw=0.25, zorder=1e3)
-                ax.plot([xmax, xmax], [ymin, ymax], zmin, **edges_kw)
-                ax.plot([xmax, xmax], [ymin, ymax], zmax, **edges_kw)
-                ax.plot([xmin, xmin], [ymin, ymax], zmax, **edges_kw)
-
-                ax.plot([xmin, xmax], [ymin, ymin], zmax, **edges_kw)
-                ax.plot([xmin, xmax], [ymax, ymax], zmax, **edges_kw)
-                ax.plot([xmin, xmax], [ymax, ymax], zmin, **edges_kw)
-
-                ax.plot([xmax, xmax], [ymin, ymin], [zmin, zmax], **edges_kw)
-                ax.plot([xmax, xmax], [ymax, ymax], [zmin, zmax], **edges_kw)
-                ax.plot([xmin, xmin], [ymax, ymax], [zmin, zmax], **edges_kw)
-                
-                ax.set(xlim=(xmin, xmax),
-                       ylim=(ymin, ymax),
-                       zlim=(zmin, zmax))
             else:
-                raise ValueError("plot_method must be 'voxel' or 'contourf'")
+                raise ValueError("plot_method must be 'image' or 'contourf'")
 
+            # plot edges
+            edges_kw = dict(color="k", lw=0.25, zorder=1e3)
+            ax.plot([xmax, xmax], [ymin, ymax], zmin, **edges_kw)
+            ax.plot([xmax, xmax], [ymin, ymax], zmax, **edges_kw)
+            ax.plot([xmin, xmin], [ymin, ymax], zmax, **edges_kw)
+            ax.plot([xmin, xmax], [ymin, ymin], zmax, **edges_kw)
+            ax.plot([xmin, xmax], [ymax, ymax], zmax, **edges_kw)
+            ax.plot([xmin, xmax], [ymax, ymax], zmin, **edges_kw)
+            ax.plot([xmax, xmax], [ymin, ymin], [zmin, zmax], **edges_kw)
+            ax.plot([xmax, xmax], [ymax, ymax], [zmin, zmax], **edges_kw)
+            ax.plot([xmin, xmin], [ymax, ymax], [zmin, zmax], **edges_kw)
+            
+            # figure settings
+            ax.set(xlim=(xmin, xmax), ylim=(ymin, ymax), zlim=(zmin, zmax))
             ax.set_title(titles[i] if row == 0 else "")
             ax.set_axis_off()
             ax.set_box_aspect([1/8, 1, 1])
@@ -251,8 +391,31 @@ def pred_voxel(y, p, t, fig=None, show_colorbar=True, vmins=None, vmaxs=None,
     fig.text(0.1, 0.32, 'Prediction', va='center', ha='right', rotation=90)
     return axes
 
-def pred_voxel_anim(y, p, t_range, save_path=None, fps=2, **kwargs):
-    
+def pred_anim3d(
+    y: np.ndarray, 
+    p: np.ndarray, 
+    t_range: Optional[range] = None, 
+    save_path: Optional[str] = None, 
+    fps: int = 2, 
+    **kwargs
+) -> None:
+    """
+    Create a 3D animation of ground truth and predictions over a range of time steps.
+
+    Parameters:
+    - y: np.ndarray, shape (3, height, width, time)
+        Ground truth data.
+    - p: np.ndarray, shape (3, height, width, time)
+        Predicted data.
+    - t_range: Optional[range]
+        Range of time steps to animate.
+    - save_path: Optional[str]
+        Path to save the animation. If None, the animation is displayed.
+    - fps: int
+        Frames per second for the animation.
+    - kwargs: dict
+        Additional keyword arguments for `pred_plot3d` function.
+    """
     if t_range is None:
         t_range = range(y.shape[-1])
     
@@ -261,7 +424,7 @@ def pred_voxel_anim(y, p, t_range, save_path=None, fps=2, **kwargs):
     def update(t):
         for ax in fig.axes:
             ax.clear()
-        pred_voxel(y, p, t, fig=fig, **kwargs)
+        pred_plot3d(y, p, t, fig=fig, **kwargs)
         fig.suptitle(f"Time step: {t}")
         return fig.axes
     
