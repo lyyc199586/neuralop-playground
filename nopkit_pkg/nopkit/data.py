@@ -45,7 +45,7 @@ def get_ramps_files(path: Path) -> List[Path]:
     ramps_files = []
     for d in macro_dirs:
         ramp_file = d / 'output' / 'volume fraction_slice1.npy'
-        if ramp_file exists():
+        if ramp_file.exists():
             ramps_files.append(ramp_file)
         
     return ramps_files
