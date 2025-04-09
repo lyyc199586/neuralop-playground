@@ -248,8 +248,6 @@ def pred_plot(
             cbar = fig.colorbar(ims[i + 3], cax=cax, orientation="horizontal")
             cbar.set_label(labels[i])
             cbar.set_ticks([vmins[i], vmaxs[i]])
-            # cbar.ax.xaxis.set_major_formatter(formatter)
-            # cbar.update_ticks()
 
     # row 3: Error = Prediction - Ground truth
     if show_error:
@@ -296,9 +294,6 @@ def pred_plot(
                 cbar = fig.colorbar(sm, cax=cax, orientation='horizontal')
                 cbar.set_ticks([vmin, vmax])
                 cbar.set_ticklabels([rf"${vmin*100:.1f}\%$", rf"${vmax*100:.1f}\%$"])
-                # cbar.ax.xaxis.set_major_formatter(formatter)
-                # cbar.update_ticks()
-
     # row annotation
     axes[0, 0].annotate("Ground truth", xy=(-0.05, 0.5), xycoords="axes fraction",
                     va="center", ha="right", rotation=90)
@@ -310,7 +305,7 @@ def pred_plot(
         axes[2, 0].annotate("Relative Error", xy=(-0.05, 0.5), xycoords="axes fraction",
                             va="center", ha="right", rotation=90)
 
-    return axes, ims
+    return fig, axes, ims
 
 
 def pred_anim(
@@ -341,18 +336,18 @@ def pred_anim(
     if t_range is None:
         t_range = range(y.shape[-1])
 
-    _, ims = pred_plot(y, pred, t_range[0], **kwargs)
+    fig, _, ims = pred_plot(y, pred, t_range[0], **kwargs)
 
     def update(t):
         for i in range(3):
             ims[i].set_array(y[i, :, :, t])
             ims[i + 3].set_array(pred[i, :, :, t])
+        fig.suptitle(f"Time step: {t}")
         return ims
 
     anim = FuncAnimation(
         ims[0].figure, update, frames=t_range, blit=False, repeat=False
     )
-    # plt.tight_layout()
 
     if save_path:
         anim.save(save_path, fps=fps)
