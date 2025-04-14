@@ -2,7 +2,7 @@
 data.py
 
 Utility functions for loading and preprocessing tensor datasets
-used in neural operator models for virtual damage sensors.
+used in neural operator models for virtual damage sensor.
 
 Author: Yangyuanchen Liu
 Date: 2025-03-28
@@ -25,10 +25,10 @@ from neuralop.data.transforms.data_processors import DefaultDataProcessor
 
 def get_ramps_files(path: Path) -> List[Path]:
     """
-    Retrieves sorted file paths to RAMP `.npy` files from the 'InputsSpatial' directory.
+    Retrieves sorted file paths to RAMP `.npy` files from InputsSpatial directory.
 
     Args:
-        path (Path): Root directory containing the 'InputsSpatial' folder.
+        path (Path): Root directory containing 'InputsSpatial'.
 
     Returns:
         List[Path]: Sorted list of RAMP file paths.
@@ -52,14 +52,14 @@ def get_ramps_files(path: Path) -> List[Path]:
     
 def get_var_files(path: Path, variable: str) -> List[Path]:
     """
-    Retrieves sorted file paths for a given variable from the 'InputsSpatioTemporal' directory.
+    Retrieves sorted file paths for a given variable from InputsSpatioTemporal directory.
 
     Args:
-        path (Path): Root directory containing the 'InputsSpatioTemporal' folder.
+        path (Path): Root directory containing 'InputsSpatioTemporal'.
         variable (str): Variable name (e.g., 'damage3', 'deformation gradient2').
 
     Returns:
-        List[Path]: Sorted list of file paths for the specified variable.
+        List[Path]: Sorted list of variable file paths.
     """
     
     # each variable data have shape (time_steps, res_x, res_y)
@@ -77,7 +77,7 @@ def get_var_files(path: Path, variable: str) -> List[Path]:
             
     return var_files
 
-def prepare_dataset(load_dir: Path, save_dir: Path) -> Dict[str, torch.Tensor]:
+def prepare_dataset(load_dir:Path, save_dir: Path) -> Dict[str, torch.Tensor]:
     """
     Loads and preprocesses RAMPs and spatiotemporal variables from the given directory.
 
@@ -160,17 +160,19 @@ def prepare_dataset(load_dir: Path, save_dir: Path) -> Dict[str, torch.Tensor]:
 
 class DamageSensorDataset:
     """
-    Dataset class for damage sensor data.
-
-    This class:
-    1. Splits data into training and testing sets.
-    2. Includes masks for electric fields to generate sparse fields as input.
-    3. Preprocesses data (e.g., normalization).
-
-    Attributes:
-        train_db (torch.utils.data.Dataset): Training dataset.
-        test_dbs (Dict[int, torch.utils.data.Dataset]): Test datasets for different resolutions.
-        data_processor (DefaultDataProcessor): Data processor for normalization.
+    This class is based on neuralop/data/datasets/pt_dataset.py,
+    1. split data into train and test,
+    2. include the masks for electric field to generate sparse field as input
+        x: [Ek(x, t), M(x), RAMPs(x)], where Ek(x, t) = E(x, t)@M(x), M and RAMPs are extended to match timesteps
+        y: [E(x, t), F(x, t), D(x, t)]
+    3. preprocess data (normalization)
+    we should add the ability to extend multiple masks (generated randomly) in general (provide a mask list)
+    
+    Just like PTdataset, this dataset are required to expose the following attributes after init:
+    train_db: torch.utils.data.Dataset of training examples
+    test_db:  ""                       of test examples
+    data_processor: neuralop.data.transforms.DataProcessor to process data examples
+        optional, default is None
     """
     def __init__(self,
                  ramps_path: Union[Path, str],
@@ -178,31 +180,19 @@ class DamageSensorDataset:
                  defgrad_path: Union[Path, str],
                  elec_path: Union[Path, str],
                  masks_path: Union[Path, str],
-                 n_train: int,
+                 n_train:int,
                  batch_size: int,
                  test_batch_sizes: List[int],
-                 test_resolutions: List[int] = [32],
-                 encode_input: bool = True,
-                 encode_output: bool = True,
+                 test_resolutions: int=[32],
+                 encode_input: bool=True,
+                 encode_output: bool=True,
                  encoding: str = "channel-wise",
-                 channel_dim: int = 1):
+                 channel_dim: int = 1 # 
+                 ):
         """
-        Initializes the DamageSensorDataset.
-
-        Args:
-            ramps_path (Union[Path, str]): Path to RAMPs tensor file.
-            damage_path (Union[Path, str]): Path to damage tensor file.
-            defgrad_path (Union[Path, str]): Path to deformation gradient tensor file.
-            elec_path (Union[Path, str]): Path to electric field tensor file.
-            masks_path (Union[Path, str]): Path to masks tensor file.
-            n_train (int): Number of training samples.
-            batch_size (int): Batch size for training.
-            test_batch_sizes (List[int]): Batch sizes for test datasets.
-            test_resolutions (List[int], optional): Spatial resolutions for test datasets. Defaults to [32].
-            encode_input (bool, optional): Whether to normalize input data. Defaults to True.
-            encode_output (bool, optional): Whether to normalize output data. Defaults to True.
-            encoding (str, optional): Encoding method ('channel-wise' or 'pixel-wise'). Defaults to "channel-wise".
-            channel_dim (int, optional): Dimension for indexing data channels. Defaults to 1.
+        channel_dim : int, optional
+            dimension of saved tensors to index data channels, 
+            by default 1 (i.e, n_samples, n_channels, dim_1, dim_2, ...)
         """
 
         #### Load data
@@ -339,12 +329,12 @@ def load_damage_sensor_dataset(
     n_train: int,
     batch_size: int,
     test_batch_sizes: List[int],
-    test_resolutions: List[int] = [32],
+    test_resolutions: int=[32],
     encode_input: bool = True,
     encode_output: bool = True,
     encoding: str = "channel-wise",
     channel_dim: int = 1
-) -> Tuple[DataLoader, Dict[int, DataLoader], DefaultDataProcessor]:
+) -> DamageSensorDataset:
     """
     Load and prepare the Damage Sensor dataset.
 
@@ -354,20 +344,15 @@ def load_damage_sensor_dataset(
         defgrad_path (Union[Path, str]): Path to deformation gradient tensor file.
         elec_path (Union[Path, str]): Path to electric field tensor file.
         masks_path (Union[Path, str]): Path to masks tensor file.
-        n_train (int): Number of training samples.
-        batch_size (int): Batch size for training.
-        test_batch_sizes (List[int]): Batch sizes for test datasets.
-        test_resolutions (List[int], optional): Spatial resolutions for test datasets. Defaults to [32].
-        encode_input (bool, optional): Whether to normalize input data. Defaults to True.
-        encode_output (bool, optional): Whether to normalize output data. Defaults to True.
-        encoding (str, optional): Encoding method ('channel-wise' or 'pixel-wise'). Defaults to "channel-wise".
-        channel_dim (int, optional): Dimension for indexing data channels. Defaults to 1.
+        n_train (int): Number of training samples (should be less than n_samples).
+        test_resolution (int): Spatial resolution for test dataset.
+        encode_input (bool): Whether to encode input data.
+        encode_output (bool): Whether to encode output data.
+        encoding (str): Encoding method ('channel-wise' or 'pixel-wise').
+        channel_dim (int): Dimension for indexing data channels.
 
     Returns:
-        Tuple[DataLoader, Dict[int, DataLoader], DefaultDataProcessor]:
-            - Training DataLoader.
-            - Dictionary of test DataLoaders for different resolutions.
-            - Data processor for normalization.
+        DamageSensorDataset: The loaded dataset object.
     """
     
     dataset = DamageSensorDataset(
