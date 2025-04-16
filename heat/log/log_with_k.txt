@@ -1,0 +1,63 @@
+Training on 950 samples
+Testing on [50, 50] samples         on resolutions [32, 64].
+Raw outputs of shape torch.Size([16, 1, 32, 32])
+[0] time=10.32, avg_loss=0.6482, train_err=10.2633
+Eval: 32_h1=0.3746, 32_l2=0.2828, 64_h1=0.4253, 64_l2=0.1736
+[Rank 0]: saved training state to ./ckpt/fno_with_k/
+[1] time=9.92, avg_loss=0.2889, train_err=4.5741
+Eval: 32_h1=0.2637, 32_l2=0.1551, 64_h1=0.3554, 64_l2=0.0957
+[Rank 0]: saved training state to ./ckpt/fno_with_k/
+[2] time=9.94, avg_loss=0.2255, train_err=3.5708
+Eval: 32_h1=0.2064, 32_l2=0.1096, 64_h1=0.3186, 64_l2=0.1103
+[Rank 0]: saved training state to ./ckpt/fno_with_k/
+[3] time=9.97, avg_loss=0.1928, train_err=3.0531
+Eval: 32_h1=0.2007, 32_l2=0.1217, 64_h1=0.3206, 64_l2=0.1609
+[Rank 0]: saved training state to ./ckpt/fno_with_k/
+[4] time=10.05, avg_loss=0.1718, train_err=2.7197
+Eval: 32_h1=0.1801, 32_l2=0.1114, 64_h1=0.3056, 64_l2=0.1501
+[Rank 0]: saved training state to ./ckpt/fno_with_k/
+[5] time=10.02, avg_loss=0.1520, train_err=2.4067
+Eval: 32_h1=0.1430, 32_l2=0.0778, 64_h1=0.2727, 64_l2=0.1044
+[Rank 0]: saved training state to ./ckpt/fno_with_k/
+[6] time=10.04, avg_loss=0.1345, train_err=2.1297
+Eval: 32_h1=0.1390, 32_l2=0.0779, 64_h1=0.2627, 64_l2=0.0948
+[Rank 0]: saved training state to ./ckpt/fno_with_k/
+[7] time=10.03, avg_loss=0.1242, train_err=1.9666
+Eval: 32_h1=0.1236, 32_l2=0.0666, 64_h1=0.2590, 64_l2=0.0969
+[Rank 0]: saved training state to ./ckpt/fno_with_k/
+[8] time=10.24, avg_loss=0.1158, train_err=1.8335
+Eval: 32_h1=0.1168, 32_l2=0.0628, 64_h1=0.2580, 64_l2=0.1093
+[Rank 0]: saved training state to ./ckpt/fno_with_k/
+[9] time=10.30, avg_loss=0.1075, train_err=1.7028
+Eval: 32_h1=0.1134, 32_l2=0.0543, 64_h1=0.2563, 64_l2=0.1061
+[Rank 0]: saved training state to ./ckpt/fno_with_k/
+[10] time=10.34, avg_loss=0.0960, train_err=1.5203
+Eval: 32_h1=0.1017, 32_l2=0.0537, 64_h1=0.2559, 64_l2=0.1118
+[Rank 0]: saved training state to ./ckpt/fno_with_k/
+[11] time=12.22, avg_loss=0.0944, train_err=1.4948
+Eval: 32_h1=0.1012, 32_l2=0.0517, 64_h1=0.2586, 64_l2=0.1188
+[Rank 0]: saved training state to ./ckpt/fno_with_k/
+[12] time=13.83, avg_loss=0.0894, train_err=1.4163
+Eval: 32_h1=0.0961, 32_l2=0.0451, 64_h1=0.2537, 64_l2=0.1053
+[Rank 0]: saved training state to ./ckpt/fno_with_k/
+[13] time=13.62, avg_loss=0.0870, train_err=1.3774
+Eval: 32_h1=0.0950, 32_l2=0.0445, 64_h1=0.2539, 64_l2=0.1006
+[Rank 0]: saved training state to ./ckpt/fno_with_k/
+[14] time=13.90, avg_loss=0.0841, train_err=1.3308
+Eval: 32_h1=0.0946, 32_l2=0.0425, 64_h1=0.2507, 64_l2=0.1017
+[Rank 0]: saved training state to ./ckpt/fno_with_k/
+[15] time=13.81, avg_loss=0.0821, train_err=1.2992
+Eval: 32_h1=0.0907, 32_l2=0.0402, 64_h1=0.2556, 64_l2=0.1122
+[Rank 0]: saved training state to ./ckpt/fno_with_k/
+[16] time=13.89, avg_loss=0.0798, train_err=1.2632
+Eval: 32_h1=0.0898, 32_l2=0.0413, 64_h1=0.2569, 64_l2=0.1180
+[Rank 0]: saved training state to ./ckpt/fno_with_k/
+[17] time=12.28, avg_loss=0.0784, train_err=1.2421
+Eval: 32_h1=0.0889, 32_l2=0.0387, 64_h1=0.2510, 64_l2=0.1021
+[Rank 0]: saved training state to ./ckpt/fno_with_k/
+[18] time=10.42, avg_loss=0.0763, train_err=1.2074
+Eval: 32_h1=0.0895, 32_l2=0.0402, 64_h1=0.2507, 64_l2=0.0958
+[Rank 0]: saved training state to ./ckpt/fno_with_k/
+[19] time=10.24, avg_loss=0.0766, train_err=1.2128
+Eval: 32_h1=0.1020, 32_l2=0.0593, 64_h1=0.2666, 64_l2=0.1451
+[Rank 0]: saved training state to ./ckpt/fno_with_k/
