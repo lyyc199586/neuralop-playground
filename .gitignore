@@ -181,3 +181,4 @@ cython_debug/
 **/model/
 **/wandb/
 **/log.txt
+**/tensorboard_logs/
