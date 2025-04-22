@@ -15,7 +15,6 @@ from neuralop.mpu.comm import get_local_rank
 from neuralop.training import setup, AdamW
 from nopkit.data import load_damage_sensor_dataset
 
-
 # Read the configuration
 config_name = "default"
 pipe = ConfigPipeline(
@@ -48,10 +47,10 @@ if config.wandb.log and is_logger:
                 config.fno.n_layers,
                 config.fno.n_modes,
                 config.fno.hidden_channels,
-                config.fno.factorization,
-                config.fno.rank,
-                config.patching.levels,
-                config.patching.padding,
+                # config.fno.factorization,
+                # config.fno.rank,
+                # config.patching.levels,
+                # config.patching.padding,
             ]
         )
     wandb_init_args = dict(
@@ -83,7 +82,7 @@ train_loader, test_loaders, data_processor = load_damage_sensor_dataset(
     damage_path=data_dir / "damage_n500_t175_res32.pt",
     defgrad_path=data_dir / "defgrad_n500_t175_res32.pt",
     elec_path=data_dir / "elec_n500_t175_res32.pt",
-    masks_path=data_dir / "mask_saikat.pt",
+    masks_path=data_dir / "masks5_range4_17.pt",
     n_train=config.data.n_train,
     batch_size=config.data.batch_size,
     test_batch_sizes=config.data.test_batch_sizes,
@@ -220,3 +219,5 @@ if config.wandb.log and is_logger:
 
 if dist.is_initialized():
     dist.destroy_process_group()
+    
+model.save_checkpoint(config.ckpt.model_dir, save_name=config.ckpt.save_name)
