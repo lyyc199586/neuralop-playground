@@ -17,7 +17,7 @@ import numpy as np
 import torch
 from pathlib import Path
 from typing import List, Dict, Tuple, Union
-from einops import rearrange
+from einops import rearrange, repeat
 from torch.utils.data import DataLoader
 from neuralop.data.datasets.tensor_dataset import TensorDataset
 from neuralop.data.transforms.normalizers import UnitGaussianNormalizer
@@ -229,26 +229,39 @@ class DamageSensorDataset:
             f = defgrad[i]      # (res_x, res_y, time_steps)
             d = damage[i]       # (res_x, res_y, time_steps)
             
-            for mask in masks:
-                # apply mask to electric field， Ek = E*M
-                e_masked = e * mask.unsqueeze(-1)  # Broadcasting to apply mask, shape (res_x, res_y, time_steps)
+            # for mask in masks:
+            #     # apply mask to electric field， Ek = E*M
+            #     e_masked = e * mask.unsqueeze(-1)  # Broadcasting to apply mask, shape (res_x, res_y, time_steps)
                 
-                # expand mask and ramp to match time steps
-                mask_expanded = mask.unsqueeze(-1).expand(res_x, res_y, time_steps)
-                ramp_expanded = ramp.unsqueeze(-1).expand(res_x, res_y, time_steps)
+            #     # expand mask and ramp to match time steps
+            #     mask_expanded = mask.unsqueeze(-1).expand(res_x, res_y, time_steps)
+            #     ramp_expanded = ramp.unsqueeze(-1).expand(res_x, res_y, time_steps)
                 
-                # stack inputs: (n_channels=3, res_x, res_y, time_steps)
-                x = torch.stack([e_masked, mask_expanded, ramp_expanded], dim=0)
-                y = torch.stack([e, f, d], dim=0)
+            #     # stack inputs: (n_channels=3, res_x, res_y, time_steps)
+            #     x = torch.stack([e_masked, mask_expanded, ramp_expanded], dim=0)
+            #     y = torch.stack([e, f, d], dim=0)
                 
-                inputs.append(x)
-                outputs.append(y)
+            #     inputs.append(x)
+            #     outputs.append(y)
+
+            mask = masks[i % n_masks]
+        
+            e_masked = e * mask.unsqueeze(-1)  # Broadcasting to apply mask, shape (res_x, res_y, time_steps)
+
+            mask_expanded = repeat(mask, 'x y -> x y t', t=time_steps)  # (res_x, res_y, time_steps)
+            ramp_expanded = repeat(ramp, 'x y -> x y t', t=time_steps)  # (res_x, res_y, time_steps)
+            
+            x = rearrange([e_masked, mask_expanded, ramp_expanded], 'c x y t -> c x y t')
+            y = rearrange([e, f, d], 'c x y t -> c x y t')
+            
+            inputs.append(x)
+            outputs.append(y)
                 
         x_all = torch.stack(inputs)  # (n_masks*n_samples, n_channels, res_x, res_y, time_steps)
         y_all = torch.stack(outputs) # (n_masks*n_samples, n_channels, res_x, res_y, time_steps)
         
         # modify n_train based on n_masks
-        n_train = n_train * n_masks
+        # n_train = n_train * n_masks
         x_train = x_all[:n_train]
         y_train = y_all[:n_train]
         
