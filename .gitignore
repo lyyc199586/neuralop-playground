@@ -180,5 +180,5 @@ cython_debug/
 **/ckpt/
 **/model/
 **/wandb/
-**/log.txt
+**/log/
 **/tensorboard_logs/
