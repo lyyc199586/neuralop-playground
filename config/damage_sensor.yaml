@@ -5,6 +5,7 @@ default: &DEFAULT
   n_params_baseline: None #If None, will be computed
   verbose: True
   arch: 'fno'
+  # device: 'cpu'
 
   #Distributed computing
   distributed:
@@ -13,24 +14,28 @@ default: &DEFAULT
     wireup_store: 'tcp'
     model_parallel_size: 2
     seed: 666
+    device: 'cpu'
 
     # FNO related
   fno:
     data_channels: 3
     out_channels: 3
     n_modes: [8,8,10]
-    hidden_channels: 32
+    hidden_channels: 64
     projection_channel_ratio: 2
     n_layers: 4
-    norm: None
+    norm: 'group_norm'
     use_channel_mlp: 1
-    channel_mlp_expansion: 0.5
-    channel_mlp_dropout: 0
+    channel_mlp_expansion: 1.0
+    channel_mlp_dropout: 0.1
+    fno_skip: 'soft-gating'
+    domain_padding: 0.1
+    domain_padding_mode: 'symmetric'
 
     # Optimizer
   opt:
-    n_epochs: 10 # 500
-    learning_rate: 3e-4
+    n_epochs: 100 # 500
+    learning_rate: 1e-4
     training_loss: 'h1'
     weight_decay: 1e-4
     amp_autocast: False
@@ -43,13 +48,13 @@ default: &DEFAULT
   # Dataset related
   data:
     folder: ../data/damage_sensor/
-    batch_size: 10
+    batch_size: 16
     n_train: 450
     train_resolution: 32
     test_resolutions: [32] #, 1024] #, 1024] 
-    test_batch_sizes: [10] #, 4] #, 1]
+    test_batch_sizes: [16] #, 4] #, 1]
     encode_input: True
-    encode_output: False
+    encode_output: True
 
     # Patching
   patching:
@@ -70,5 +75,7 @@ default: &DEFAULT
 
   # ckpt and model
   ckpt:
-    save_dir: './ckpt/fno3d_test/'
+    save_dir: './ckpt/fno3d_masks5/'
     save_every: 10
+    model_dir: './model'
+    model_name: 'fno3d_masks5'

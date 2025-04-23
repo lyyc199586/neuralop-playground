@@ -268,6 +268,11 @@ class DamageSensorDataset:
         x_test = x_all[n_train:]
         y_test = y_all[n_train:]
         
+        # shuffle train set 
+        perm = torch.randperm(x_train.shape[0])
+        x_train = x_train[perm]
+        y_train = y_train[perm]
+        
         # print train and test info
         print(f"Loading total samples: {n_samples}, total masks: {n_masks}")
         print(f"Loading train db: {x_train.shape[0]} samples, test db: {x_test.shape[0]} samples")
