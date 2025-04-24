@@ -48,8 +48,8 @@ if config.wandb.log and is_logger:
                 config.fno.n_layers,
                 config.fno.n_modes,
                 config.fno.hidden_channels,
-                config.fno.factorization,
-                config.fno.rank,
+                # config.fno.factorization,
+                # config.fno.rank,
                 config.patching.levels,
                 config.patching.padding,
             ]
@@ -79,11 +79,11 @@ data_dir = Path(config.data.folder)
 
 # load data
 train_loader, test_loaders, data_processor = load_damage_sensor_dataset(
-    ramps_path=data_dir / "ramps_n500_res32.pt",
-    damage_path=data_dir / "damage_n500_t175_res32.pt",
-    defgrad_path=data_dir / "defgrad_n500_t175_res32.pt",
-    elec_path=data_dir / "elec_n500_t175_res32.pt",
-    masks_path=data_dir / "mask_saikat.pt",
+    ramps_path=data_dir / config.data.ramps_path,
+    damage_path=data_dir / config.data.damage_path,
+    defgrad_path=data_dir / config.data.defgrad_path,
+    elec_path=data_dir / config.data.elec_path,
+    masks_path=data_dir / config.data.masks_path,
     n_train=config.data.n_train,
     batch_size=config.data.batch_size,
     test_batch_sizes=config.data.test_batch_sizes,
@@ -220,3 +220,5 @@ if config.wandb.log and is_logger:
 
 if dist.is_initialized():
     dist.destroy_process_group()
+    
+model.save_checkpoint(config.ckpt.model_dir, save_name=config.ckpt.save_name)
