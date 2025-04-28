@@ -112,7 +112,7 @@ def plot_best_layouts(
 
 
 def plot_fitness_curve(
-    history_dir: str, plot_best=True, plot_avg=False, plot_worst=False
+    history_dir: str, ax=None, plot_best=True, plot_avg=False, plot_worst=False
 ):
     """
     Plots fitness curves over generations.
@@ -145,21 +145,21 @@ def plot_fitness_curve(
         avg_fitness.append(sum(fitnesses) / len(fitnesses))
         worst_fitness.append(max(fitnesses))
 
-    plt.figure(figsize=(6, 4))
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(4, 2))
 
     if plot_best:
-        plt.plot(generations, best_fitness, label="Best Fitness", marker="o")
+        ax.plot(generations, best_fitness, label="Best Fitness", marker="o")
     if plot_avg:
-        plt.plot(generations, avg_fitness, label="Average Fitness", linestyle="--")
+        ax.plot(generations, avg_fitness, label="Average Fitness", linestyle="--")
     if plot_worst:
-        plt.plot(generations, worst_fitness, label="Worst Fitness", linestyle=":")
+        ax.plot(generations, worst_fitness, label="Worst Fitness", linestyle=":")
 
-    plt.xlabel("Generation")
-    plt.ylabel("Fitness")
-    plt.title("Fitness Curve over Generations")
-    plt.grid(True)
-    plt.legend()
-    plt.tight_layout()
+    ax.set_xlabel("Generation")
+    ax.set_ylabel("Fitness")
+    # plt.title("Fitness Curve over Generations")
+    ax.legend()
+    # plt.tight_layout()
     plt.show()
 
 
@@ -190,6 +190,7 @@ class GeneticAlgorithm:
         data_processor: DefaultDataProcessor,
         device: str = "cpu",
         num_sensors_range: Tuple[int, int] = (5, 17),
+        # initial_individual: Optional[List[Tuple[int, int]]] = None,
         grid_size_x: int = 32,
         grid_size_y: int = 32,
         lambda_factor: float = 0.05,
@@ -238,6 +239,7 @@ class GeneticAlgorithm:
         self.cxpb = cxpb
         self.mutpb = mutpb
         self.first_gen = True
+        # self.initial_individual = initial_individual
         self.toolbox = base.Toolbox()
         self.setup_ga()
 
@@ -253,13 +255,20 @@ class GeneticAlgorithm:
         Returns:
             List[Tuple[int, int]]: A list of sensor positions as (y, x) tuples.
         """
-        if self.first_gen:
-            num_sensors = random.randint(10, 17)
-        else:
-            num_sensors = random.randint(
-                self.num_sensors_range[0], self.num_sensors_range[1]
-            )
-            
+        # if self.first_gen:
+        #     num_sensors = random.randint(10, 17)
+        # else:
+        #     num_sensors = random.randint(
+        #         self.num_sensors_range[0], self.num_sensors_range[1]
+        #     )
+        
+        # if self.first_gen and self.initial_individual is not None:
+        #     return self.initial_individual.copy()
+
+        num_sensors = random.randint(
+            self.num_sensors_range[0], self.num_sensors_range[1]
+        )
+
         sensors = set()
         sensors.add((31, 16))  # add the center top sensor
 
@@ -345,6 +354,8 @@ class GeneticAlgorithm:
         mask = self.layout_to_mask(individual)
 
         total_loss = 0.0
+        num_elements = 0
+
         for data in self.test_db:
             x = data["x"].to(self.device)  # (c, h, w, t)
             y = data["y"].to(self.device)  # (c, h, w, t)
@@ -364,10 +375,13 @@ class GeneticAlgorithm:
             pred, _ = self.data_processor.postprocess(pred, data_new)
 
             # print(f"y shape: {y.shape}, pred shape: {pred.shape}, mask shape: {mask_expanded.shape}")
-            loss = torch.nn.functional.mse_loss(pred[0, :, :, :, :], y)
+            loss = torch.nn.functional.mse_loss(pred[0, 2, :, :, :], y[2, :, :, :])
             total_loss += loss.item()
 
-        return total_loss / len(self.test_db)
+            # accumulate number of elements
+            num_elements += y.numel()
+
+        return total_loss / num_elements
 
     def fitness(self, individual: List[Tuple[int, int]]) -> Tuple[float]:
         """
@@ -424,7 +438,7 @@ class GeneticAlgorithm:
 
         # Sort population: best individual first
         best = hof[0]
-        individuals = [best] + [ind for ind in pop if ind is not best]
+        individuals = [best] + [ind for ind in pop if ind != best]
 
         data = []
         for ind in individuals:
@@ -461,7 +475,7 @@ class GeneticAlgorithm:
             ind.fitness.values = fit
 
         self.first_gen = False
-        
+
         hof.update(pop)
         record = stats.compile(pop)
         logbook.record(gen=0, nevals=len(pop), **record)
